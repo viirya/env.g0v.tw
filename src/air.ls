@@ -181,6 +181,8 @@ var color-of
 var stations
 
 set-metric = (name) ->
+  $ \#history .hide!
+  history.chart.unload current-metric.toLowerCase! if current-metric
   current-metric := name
   color-of := d3.scale.linear()
   .domain metrics[name].domain ? [0, 50, 100, 200, 300]
@@ -364,14 +366,16 @@ draw-heatmap = (stations) ->
         .style \top y + \px
 
       sitecode = d.SITE_CODE
-      err, req <- d3.xhr piped "http://graphite.gugod.org/render/?_salt=1392034055.328&lineMode=connected&from=-24hours&target=epa.aqx.site_code.#{sitecode}.pm25&format=csv"
+      err, req <- d3.xhr piped "http://graphite.gugod.org/render/?_salt=1392034055.328&lineMode=connected&from=-24hours&target=epa.aqx.site_code.#{sitecode}.#{current-metric.toLowerCase!.replace \. ''}&format=csv"
       datum = d3.csv.parseRows req.responseText, ([_, date, value]) ->
         { date, value: parse-float value}
       return unless datum.length
       history.chart.load columns: [
-        ['pm2.5'] ++ [value for {value} in datum]
+        [current-metric.toLowerCase!] ++ [value for {value} in datum]
         ['x'] ++ [date for {date} in datum]
       ]
+
+      $ \#history .show!
       history.chart.resize!
 
   # plot interpolated value
